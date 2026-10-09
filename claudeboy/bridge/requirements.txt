@@ -1,0 +1,5 @@
+anthropic
+pyboy
+pillow
+pyserial
+mpremote

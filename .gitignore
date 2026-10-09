@@ -1,0 +1,6 @@
+.DS_Store
+build/
+.venv/
+__pycache__/
+*.ram
+images-private/
