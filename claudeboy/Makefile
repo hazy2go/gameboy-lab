@@ -4,14 +4,15 @@
 #                    through Claude Code)
 #   make emu FAKE=1  same, with canned replies
 #   ENGINE=api       use the Anthropic API (ANTHROPIC_API_KEY) instead of the subscription
-#   make bridge      run the bridge for the real Game Boy (Pico on USB)
-#   make pico        copy pico/main.py onto the Pico (MicroPython already on it)
+#   make bridge      run the bridge for the real Game Boy (Pico with the gb-link-usb firmware on USB)
+#                    FIRMWARE=micropython for the old pico/main.py setup
+#   make pico        old setup only: copy pico/main.py onto a MicroPython Pico
 #   make demo        build/claudeboy-demo.gb: standalone, preset replies (tools/demo_replies.py),
 #                    nothing on the link cable needed
 #   make emu-demo    play the demo ROM on the Mac
 #   make test        headless end-to-end tests: live ROM + demo ROM, fake printer
 
-GBDK ?= $(HOME)/gbdk
+GBDK ?= $(HOME)/Toolchains/gbdk
 LCC = $(GBDK)/bin/lcc
 PY = .venv/bin/python
 
@@ -45,7 +46,7 @@ emu: all .venv
 	$(PY) bridge/bridge.py emu $(if $(FAKE),--fake) $(if $(ENGINE),--engine $(ENGINE))
 
 bridge: .venv
-	$(PY) bridge/bridge.py serial $(if $(PORT),--port $(PORT)) $(if $(FAKE),--fake) $(if $(ENGINE),--engine $(ENGINE))
+	$(PY) bridge/bridge.py serial $(if $(PORT),--port $(PORT)) $(if $(FIRMWARE),--firmware $(FIRMWARE)) $(if $(FAKE),--fake) $(if $(ENGINE),--engine $(ENGINE))
 
 pico: .venv
 	.venv/bin/mpremote cp pico/main.py :main.py + reset

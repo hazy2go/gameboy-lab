@@ -57,6 +57,40 @@ kept in `build/claudeboy.gb.ram`.
 **Printing:** there's only one link port. Press START, swap the Pico's cable for
 the printer, press A, then plug the Pico back in. The Game Boy reconnects by itself.
 
+## Play it on a real Game Boy (gb-link-usb)
+
+The easy way is a Raspberry Pi Pico running the **gb-link-usb** firmware
+([github.com/hazy2go/gb-link-usb](https://github.com/hazy2go/gb-link-usb)): the same
+Pico also works as a Game Boy Printer and for the other Game Boy Labs ROMs. No
+level shifter is needed with it (RP2350 pins are 5 V tolerant while the Pico is
+powered, so plug the Pico in before switching the Game Boy on).
+
+1. **Flash the Pico:** hold BOOTSEL, plug it in, drag `gb_link_usb.uf2` from the
+   gb-link-usb releases onto the RP2350 drive.
+2. **Wire the link cable** (cut a DMG link cable; check the colours with a multimeter,
+   they vary by brand):
+
+   | Game Boy link port | Pico (Pico 2 / 2 W) |
+   |---|---|
+   | pin 5 SC (clock) | GP0 |
+   | pin 2 SO (data from the Game Boy) | GP1 |
+   | pin 3 SI (data to the Game Boy) | GP2 |
+   | pin 6 GND | GND |
+
+3. **Put `build/claudeboy.gb` on a flash cart** (EverDrive etc.).
+4. **Start the bridge:** double-click `ClaudeBoy Bridge.command`, or `make bridge`.
+   It finds the Pico and switches it from printer mode to bridge mode. Replies use
+   your Claude Code login (no API key); `make bridge ENGINE=api` uses an API key instead.
+5. **Switch the Game Boy on.** The status bar goes WAITING FOR MAC → CLAUDE. Type with
+   A, send with START.
+
+When the bridge quits, the Pico goes back to being a Game Boy Printer, so START →
+print works straight into the gb-link-usb printer tool (verify on hardware).
+
+Tested: the bridge against a simulated gb-link-usb (`bridge/test_gblink.py`) and the
+ROM in the emulator (`make test`). Not yet tested end to end on a real Game Boy
+with this firmware (verify).
+
 ## Shopping list
 
 | Part | Notes | ~Price |

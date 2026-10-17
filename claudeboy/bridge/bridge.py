@@ -531,17 +531,26 @@ class Emulator:
 
 
 class SerialLink:
-    def __init__(self, bridge, port=None):
+    # gb-link-usb firmware (github.com/hazy2go/gb-link-usb): starts as a Game Boy Printer and switches to its raw
+    # bridge mode on this magic. In bridge mode it forwards every byte the Game Boy clocks out (idle 0x00 included,
+    # which on_gb_byte ignores) and answers each transfer with the next byte we queued, or 0x00.
+    GBLINK_MAGIC = b"\x1bGBBRIDGE"
+
+    def __init__(self, bridge, port=None, firmware="gblink"):
         import serial
         from serial.tools import list_ports
         if not port:
-            ports = [p.device for p in list_ports.comports() if "usbmodem" in p.device]
-            if not ports:
-                raise SystemExit("No Pico found (looked for /dev/cu.usbmodem*). Is it plugged in?")
-            port = ports[0]
+            picos = [p.device for p in list_ports.comports() if (p.vid == 0x2E8A) or "usbmodem" in p.device]
+            picos.sort(key=lambda d: ("cu." not in d, d))     # macOS: the call-out device
+            if not picos:
+                raise SystemExit("No Pico found. Is it plugged in with a data cable?")
+            port = picos[0]
         self.bridge = bridge
         self.port = serial.Serial(port, 115200, timeout=0.01)
-        print(f"Bridge on {port}. Ctrl-C to quit.")
+        if firmware == "gblink":
+            self.port.reset_input_buffer()
+            self.port.write(self.GBLINK_MAGIC)       # printer mode -> bridge mode (until the port closes)
+        print(f"Bridge on {port} ({'gb-link-usb firmware' if firmware == 'gblink' else 'MicroPython pico/main.py'}). Ctrl-C to quit.")
 
     def run(self):
         try:
@@ -561,6 +570,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("transport", choices=["emu", "serial"])
     ap.add_argument("--port")
+    ap.add_argument("--firmware", choices=["gblink", "micropython"], default="gblink",
+                    help="what runs on the Pico: the gb-link-usb firmware (default) or the old pico/main.py")
     ap.add_argument("--engine", choices=["subscription", "api", "fake"], default="subscription")
     ap.add_argument("--fake", action="store_true", help="same as --engine fake")
     ap.add_argument("--rom", type=Path, help="ROM to run in the emulator (the demo ROM needs no bridge)")
@@ -586,7 +597,7 @@ def main():
     if args.transport == "emu":
         Emulator(bridge).run()
     else:
-        SerialLink(bridge, args.port).run()
+        SerialLink(bridge, args.port, args.firmware).run()
 
 
 if __name__ == "__main__":
